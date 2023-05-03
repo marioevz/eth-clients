@@ -33,6 +33,16 @@ var AllForkchoiceUpdatedCalls = []string{
 	"engine_forkchoiceUpdatedV2",
 }
 
+var AllGetPayloadCalls = []string{
+	"engine_getPayloadV1",
+	"engine_getPayloadV2",
+}
+
+var AllNewPayloadCalls = []string{
+	"engine_newPayloadV1",
+	"engine_newPayloadV2",
+}
+
 var AllEngineCalls = []string{
 	"engine_forkchoiceUpdatedV1",
 	"engine_forkchoiceUpdatedV2",
@@ -206,9 +216,7 @@ func (en *ExecutionClient) Init(ctx context.Context) error {
 					}
 					return nil
 				}
-				for _, c := range AllForkchoiceUpdatedCalls {
-					p.AddRequestCallback(c, logCallback)
-				}
+				p.AddRequestCallbacks(logCallback, AllForkchoiceUpdatedCalls...)
 			}
 
 			if en.Config.ProxyConfig.LogEngineCalls {
@@ -225,9 +233,7 @@ func (en *ExecutionClient) Init(ctx context.Context) error {
 					)
 					return nil
 				}
-				for _, c := range AllEngineCalls {
-					p.AddResponseCallback(c, logCallback)
-				}
+				p.AddResponseCallbacks(logCallback, AllEngineCalls...)
 			}
 
 			en.proxy = p
