@@ -98,14 +98,16 @@ func MakeSpoofs(
 	return spoofs
 }
 
-func (p *Proxy) AddRequestCallback(
-	method string,
+// AddRequestCallbacks adds a callback for a request on multiple methods to the
+// proxy.
+func (p *Proxy) AddRequestCallbacks(
 	callback func([]byte) *proxy.Spoof,
+	methods ...string,
 ) {
-	log.Info("Adding request spoof callback", "method", method)
-	requestCallbacks := p.callbacks.RequestCallbacks
-	requestCallbacks[method] = callback
-	p.callbacks.RequestCallbacks = requestCallbacks
+	for _, method := range methods {
+		log.Info("Adding request spoof callback", "method", method)
+		p.callbacks.RequestCallbacks[method] = callback
+	}
 	p.proxy.UpdateSpoofingCallbacks(p.callbacks)
 }
 
@@ -118,14 +120,16 @@ func (p *Proxy) AddRequests(spoofs ...*proxy.Spoof) {
 	p.proxy.UpdateSpoofingConfig(p.config)
 }
 
-func (p *Proxy) AddResponseCallback(
-	method string,
+// AddResponseCallbacks adds a callback for a response on multiple methods to
+// the proxy.
+func (p *Proxy) AddResponseCallbacks(
 	callback func([]byte, []byte) *proxy.Spoof,
+	methods ...string,
 ) {
-	log.Info("Adding response spoof callback", "method", method)
-	responseCallbacks := p.callbacks.ResponseCallbacks
-	responseCallbacks[method] = callback
-	p.callbacks.ResponseCallbacks = responseCallbacks
+	for _, method := range methods {
+		log.Info("Adding response spoof callback", "method", method)
+		p.callbacks.ResponseCallbacks[method] = callback
+	}
 	p.proxy.UpdateSpoofingCallbacks(p.callbacks)
 }
 
