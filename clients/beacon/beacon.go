@@ -279,6 +279,7 @@ func (bn *BeaconClient) GenesisConfig(
 
 type VersionedSignedBeaconBlock struct {
 	*eth2api.VersionedSignedBeaconBlock
+	spec *common.Spec
 }
 
 func (versionedBlock *VersionedSignedBeaconBlock) ContainsExecutionPayload() bool {
@@ -350,6 +351,20 @@ func (versionedBlock *VersionedSignedBeaconBlock) Withdrawals() (common.Withdraw
 		return v.Message.Body.ExecutionPayload.Withdrawals, nil
 	}
 	return nil, nil
+}
+
+func (b *VersionedSignedBeaconBlock) Root() tree.Root {
+	switch v := b.Data.(type) {
+	case *phase0.SignedBeaconBlock:
+		return v.Message.HashTreeRoot(b.spec, tree.GetHashFn())
+	case *altair.SignedBeaconBlock:
+		return v.Message.HashTreeRoot(b.spec, tree.GetHashFn())
+	case *bellatrix.SignedBeaconBlock:
+		return v.Message.HashTreeRoot(b.spec, tree.GetHashFn())
+	case *capella.SignedBeaconBlock:
+		return v.Message.HashTreeRoot(b.spec, tree.GetHashFn())
+	}
+	panic("badly formatted beacon block")
 }
 
 func (b *VersionedSignedBeaconBlock) StateRoot() tree.Root {
@@ -445,6 +460,7 @@ func (bn *BeaconClient) BlockV2(
 	}
 	return &VersionedSignedBeaconBlock{
 		VersionedSignedBeaconBlock: versionedBlock,
+		spec:                       bn.Config.Spec,
 	}, err
 }
 
