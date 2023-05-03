@@ -82,6 +82,22 @@ func (p *Proxy) EngineRPCAddress() (string, error) {
 	return fmt.Sprintf("http://%v:%d", p.IP, p.port), nil
 }
 
+// MakeSpoofs creates a slice of spoof requests with the same fields and different
+// methods.
+func MakeSpoofs(
+	fields map[string]interface{},
+	methods ...string,
+) []*proxy.Spoof {
+	spoofs := make([]*proxy.Spoof, len(methods))
+	for i, method := range methods {
+		spoofs[i] = &proxy.Spoof{
+			Method: method,
+			Fields: fields,
+		}
+	}
+	return spoofs
+}
+
 func (p *Proxy) AddRequestCallback(
 	method string,
 	callback func([]byte) *proxy.Spoof,
@@ -93,9 +109,12 @@ func (p *Proxy) AddRequestCallback(
 	p.proxy.UpdateSpoofingCallbacks(p.callbacks)
 }
 
-func (p *Proxy) AddRequest(spoof *proxy.Spoof) {
-	log.Info("Adding spoof request", "method", spoof.Method)
-	p.config.Requests = append(p.config.Requests, spoof)
+// AddRequests adds spoofs for a set of requests to the proxy.
+func (p *Proxy) AddRequests(spoofs ...*proxy.Spoof) {
+	for _, spoof := range spoofs {
+		log.Info("Adding spoof request", "method", spoof.Method)
+	}
+	p.config.Requests = append(p.config.Requests, spoofs...)
 	p.proxy.UpdateSpoofingConfig(p.config)
 }
 
@@ -110,9 +129,12 @@ func (p *Proxy) AddResponseCallback(
 	p.proxy.UpdateSpoofingCallbacks(p.callbacks)
 }
 
-func (p *Proxy) AddResponse(spoof *proxy.Spoof) {
-	log.Info("Adding spoof response", "method", spoof.Method)
-	p.config.Responses = append(p.config.Responses, spoof)
+// AddResponses adds spoofs for a set of responses to the proxy.
+func (p *Proxy) AddResponses(spoofs ...*proxy.Spoof) {
+	for _, spoof := range spoofs {
+		log.Info("Adding spoof response", "method", spoof.Method)
+	}
+	p.config.Responses = append(p.config.Responses, spoofs...)
 	p.proxy.UpdateSpoofingConfig(p.config)
 }
 
