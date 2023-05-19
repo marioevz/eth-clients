@@ -27,23 +27,35 @@ var _ Client = &ExternalClient{}
 type ExternalClient struct {
 	Type     string
 	IP       net.IP
-	Port     int
+	Port     *int64
 	EnodeURL string
 }
 
 func ExternalClientFromURL(url string, typ string) (*ExternalClient, error) {
 	ip, portStr, err := net.SplitHostPort(url)
 	if err != nil {
-		return nil, err
+		if errP, ok := err.(*net.AddrError); ok {
+			if errP.Err == "missing port in address" {
+				ip = url
+			} else {
+				return nil, err
+			}
+		} else {
+			return nil, err
+		}
 	}
-	port, err := strconv.ParseInt(portStr, 10, 64)
-	if err != nil {
-		return nil, err
+	var port *int64
+	if portStr != "" {
+		portint, err := strconv.ParseInt(portStr, 10, 64)
+		if err != nil {
+			return nil, err
+		}
+		port = &portint
 	}
 	return &ExternalClient{
 		Type: typ,
 		IP:   net.ParseIP(ip),
-		Port: int(port),
+		Port: port,
 	}, nil
 }
 
@@ -56,7 +68,7 @@ func (m *ExternalClient) GetIP() net.IP {
 	return m.IP
 }
 
-func (m *ExternalClient) GetPort() int {
+func (m *ExternalClient) GetPort() *int64 {
 	return m.Port
 }
 
