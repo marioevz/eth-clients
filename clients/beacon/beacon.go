@@ -10,20 +10,14 @@ import (
 	"sync"
 	"time"
 
-	api "github.com/ethereum/go-ethereum/beacon/engine"
 	ethcommon "github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/marioevz/eth-clients/clients"
 	"github.com/marioevz/eth-clients/clients/utils"
 
-	"github.com/holiman/uint256"
 	"github.com/protolambda/eth2api"
 	"github.com/protolambda/eth2api/client/beaconapi"
 	"github.com/protolambda/eth2api/client/debugapi"
 	"github.com/protolambda/eth2api/client/nodeapi"
-	"github.com/protolambda/zrnt/eth2/beacon/altair"
-	"github.com/protolambda/zrnt/eth2/beacon/bellatrix"
-	"github.com/protolambda/zrnt/eth2/beacon/capella"
 	"github.com/protolambda/zrnt/eth2/beacon/common"
 	"github.com/protolambda/zrnt/eth2/beacon/phase0"
 	"github.com/protolambda/zrnt/eth2/configs"
@@ -277,152 +271,6 @@ func (bn *BeaconClient) GenesisConfig(
 	return dest, err
 }
 
-type VersionedSignedBeaconBlock struct {
-	*eth2api.VersionedSignedBeaconBlock
-	spec *common.Spec
-}
-
-func (versionedBlock *VersionedSignedBeaconBlock) ContainsExecutionPayload() bool {
-	return versionedBlock.Version == "bellatrix" ||
-		versionedBlock.Version == "capella"
-}
-
-func (versionedBlock *VersionedSignedBeaconBlock) ExecutionPayload() (api.ExecutableData, error) {
-	result := api.ExecutableData{}
-	switch v := versionedBlock.Data.(type) {
-	case *bellatrix.SignedBeaconBlock:
-		execPayload := v.Message.Body.ExecutionPayload
-		copy(result.ParentHash[:], execPayload.ParentHash[:])
-		copy(result.FeeRecipient[:], execPayload.FeeRecipient[:])
-		copy(result.StateRoot[:], execPayload.StateRoot[:])
-		copy(result.ReceiptsRoot[:], execPayload.ReceiptsRoot[:])
-		copy(result.LogsBloom[:], execPayload.LogsBloom[:])
-		copy(result.Random[:], execPayload.PrevRandao[:])
-		result.Number = uint64(execPayload.BlockNumber)
-		result.GasLimit = uint64(execPayload.GasLimit)
-		result.GasUsed = uint64(execPayload.GasUsed)
-		result.Timestamp = uint64(execPayload.Timestamp)
-		copy(result.ExtraData[:], execPayload.ExtraData[:])
-		result.BaseFeePerGas = (*uint256.Int)(&execPayload.BaseFeePerGas).ToBig()
-		copy(result.BlockHash[:], execPayload.BlockHash[:])
-		result.Transactions = make([][]byte, 0)
-		for _, t := range execPayload.Transactions {
-			result.Transactions = append(result.Transactions, t)
-		}
-	case *capella.SignedBeaconBlock:
-		execPayload := v.Message.Body.ExecutionPayload
-		copy(result.ParentHash[:], execPayload.ParentHash[:])
-		copy(result.FeeRecipient[:], execPayload.FeeRecipient[:])
-		copy(result.StateRoot[:], execPayload.StateRoot[:])
-		copy(result.ReceiptsRoot[:], execPayload.ReceiptsRoot[:])
-		copy(result.LogsBloom[:], execPayload.LogsBloom[:])
-		copy(result.Random[:], execPayload.PrevRandao[:])
-		result.Number = uint64(execPayload.BlockNumber)
-		result.GasLimit = uint64(execPayload.GasLimit)
-		result.GasUsed = uint64(execPayload.GasUsed)
-		result.Timestamp = uint64(execPayload.Timestamp)
-		copy(result.ExtraData[:], execPayload.ExtraData[:])
-		result.BaseFeePerGas = (*uint256.Int)(&execPayload.BaseFeePerGas).ToBig()
-		copy(result.BlockHash[:], execPayload.BlockHash[:])
-		result.Transactions = make([][]byte, 0)
-		for _, t := range execPayload.Transactions {
-			result.Transactions = append(result.Transactions, t)
-		}
-		result.Withdrawals = make([]*types.Withdrawal, 0)
-		for _, w := range execPayload.Withdrawals {
-			withdrawal := new(types.Withdrawal)
-			withdrawal.Index = uint64(w.Index)
-			withdrawal.Validator = uint64(w.ValidatorIndex)
-			copy(withdrawal.Address[:], w.Address[:])
-			withdrawal.Amount = uint64(w.Amount)
-			result.Withdrawals = append(result.Withdrawals, withdrawal)
-		}
-	default:
-		return result, fmt.Errorf(
-			"beacon block version can't contain execution payload",
-		)
-	}
-	return result, nil
-}
-
-func (versionedBlock *VersionedSignedBeaconBlock) Withdrawals() (common.Withdrawals, error) {
-	switch v := versionedBlock.Data.(type) {
-	case *capella.SignedBeaconBlock:
-		return v.Message.Body.ExecutionPayload.Withdrawals, nil
-	}
-	return nil, nil
-}
-
-func (b *VersionedSignedBeaconBlock) Root() tree.Root {
-	switch v := b.Data.(type) {
-	case *phase0.SignedBeaconBlock:
-		return v.Message.HashTreeRoot(b.spec, tree.GetHashFn())
-	case *altair.SignedBeaconBlock:
-		return v.Message.HashTreeRoot(b.spec, tree.GetHashFn())
-	case *bellatrix.SignedBeaconBlock:
-		return v.Message.HashTreeRoot(b.spec, tree.GetHashFn())
-	case *capella.SignedBeaconBlock:
-		return v.Message.HashTreeRoot(b.spec, tree.GetHashFn())
-	}
-	panic("badly formatted beacon block")
-}
-
-func (b *VersionedSignedBeaconBlock) StateRoot() tree.Root {
-	switch v := b.Data.(type) {
-	case *phase0.SignedBeaconBlock:
-		return v.Message.StateRoot
-	case *altair.SignedBeaconBlock:
-		return v.Message.StateRoot
-	case *bellatrix.SignedBeaconBlock:
-		return v.Message.StateRoot
-	case *capella.SignedBeaconBlock:
-		return v.Message.StateRoot
-	}
-	panic("badly formatted beacon block")
-}
-
-func (b *VersionedSignedBeaconBlock) ParentRoot() tree.Root {
-	switch v := b.Data.(type) {
-	case *phase0.SignedBeaconBlock:
-		return v.Message.ParentRoot
-	case *altair.SignedBeaconBlock:
-		return v.Message.ParentRoot
-	case *bellatrix.SignedBeaconBlock:
-		return v.Message.ParentRoot
-	case *capella.SignedBeaconBlock:
-		return v.Message.ParentRoot
-	}
-	panic("badly formatted beacon block")
-}
-
-func (b *VersionedSignedBeaconBlock) Slot() common.Slot {
-	switch v := b.Data.(type) {
-	case *phase0.SignedBeaconBlock:
-		return v.Message.Slot
-	case *altair.SignedBeaconBlock:
-		return v.Message.Slot
-	case *bellatrix.SignedBeaconBlock:
-		return v.Message.Slot
-	case *capella.SignedBeaconBlock:
-		return v.Message.Slot
-	}
-	panic("badly formatted beacon block")
-}
-
-func (b *VersionedSignedBeaconBlock) ProposerIndex() common.ValidatorIndex {
-	switch v := b.Data.(type) {
-	case *phase0.SignedBeaconBlock:
-		return v.Message.ProposerIndex
-	case *altair.SignedBeaconBlock:
-		return v.Message.ProposerIndex
-	case *bellatrix.SignedBeaconBlock:
-		return v.Message.ProposerIndex
-	case *capella.SignedBeaconBlock:
-		return v.Message.ProposerIndex
-	}
-	panic("badly formatted beacon block")
-}
-
 func (bn *BeaconClient) BlockV2Root(
 	parentCtx context.Context,
 	blockId eth2api.BlockId,
@@ -558,6 +406,29 @@ func (bn *BeaconClient) StateFinalityCheckpoints(
 	return finalityCheckpointsResponse, err
 }
 
+func (bn *BeaconClient) StateFork(
+	parentCtx context.Context,
+	stateId eth2api.StateId,
+) (*common.Fork, error) {
+	var (
+		fork   = new(common.Fork)
+		exists bool
+		err    error
+	)
+	ctx, cancel := utils.ContextTimeoutRPC(parentCtx)
+	defer cancel()
+	exists, err = beaconapi.Fork(
+		ctx,
+		bn.api,
+		stateId,
+		fork,
+	)
+	if !exists {
+		return nil, fmt.Errorf("endpoint not found on beacon client")
+	}
+	return fork, err
+}
+
 func (bn *BeaconClient) BlockFinalityCheckpoints(
 	parentCtx context.Context,
 	blockId eth2api.BlockId,
@@ -583,232 +454,6 @@ func (bn *BeaconClient) BlockFinalityCheckpoints(
 		)
 	}
 	return finalityCheckpointsResponse, err
-}
-
-type VersionedBeaconStateResponse struct {
-	*eth2api.VersionedBeaconState
-	spec *common.Spec
-}
-
-func (vbs *VersionedBeaconStateResponse) Root() tree.Root {
-	switch state := vbs.Data.(type) {
-	case *phase0.BeaconState:
-		return state.HashTreeRoot(vbs.spec, tree.GetHashFn())
-	case *altair.BeaconState:
-		return state.HashTreeRoot(vbs.spec, tree.GetHashFn())
-	case *bellatrix.BeaconState:
-		return state.HashTreeRoot(vbs.spec, tree.GetHashFn())
-	case *capella.BeaconState:
-		return state.HashTreeRoot(vbs.spec, tree.GetHashFn())
-	}
-	panic("badly formatted beacon state")
-}
-
-func (vbs *VersionedBeaconStateResponse) CurrentVersion() common.Version {
-	switch state := vbs.Data.(type) {
-	case *phase0.BeaconState:
-		return state.Fork.CurrentVersion
-	case *altair.BeaconState:
-		return state.Fork.CurrentVersion
-	case *bellatrix.BeaconState:
-		return state.Fork.CurrentVersion
-	case *capella.BeaconState:
-		return state.Fork.CurrentVersion
-	}
-	panic("badly formatted beacon state")
-}
-
-func (vbs *VersionedBeaconStateResponse) PreviousVersion() common.Version {
-	switch state := vbs.Data.(type) {
-	case *phase0.BeaconState:
-		return state.Fork.PreviousVersion
-	case *altair.BeaconState:
-		return state.Fork.PreviousVersion
-	case *bellatrix.BeaconState:
-		return state.Fork.PreviousVersion
-	case *capella.BeaconState:
-		return state.Fork.PreviousVersion
-	}
-	panic("badly formatted beacon state")
-}
-
-func (vbs *VersionedBeaconStateResponse) CurrentEpochParticipation() altair.ParticipationRegistry {
-	switch state := vbs.Data.(type) {
-	case *altair.BeaconState:
-		return state.CurrentEpochParticipation
-	case *bellatrix.BeaconState:
-		return state.CurrentEpochParticipation
-	case *capella.BeaconState:
-		return state.CurrentEpochParticipation
-	}
-	return nil
-}
-
-func (vbs *VersionedBeaconStateResponse) Balances() phase0.Balances {
-	switch state := vbs.Data.(type) {
-	case *phase0.BeaconState:
-		return state.Balances
-	case *altair.BeaconState:
-		return state.Balances
-	case *bellatrix.BeaconState:
-		return state.Balances
-	case *capella.BeaconState:
-		return state.Balances
-	}
-	panic("badly formatted beacon state")
-}
-
-func (vbs *VersionedBeaconStateResponse) Balance(
-	id common.ValidatorIndex,
-) common.Gwei {
-	balances := vbs.Balances()
-	if int(id) >= len(balances) {
-		panic("invalid validator requested")
-	}
-	return balances[id]
-}
-
-func (vbs *VersionedBeaconStateResponse) Validators() phase0.ValidatorRegistry {
-	switch state := vbs.Data.(type) {
-	case *phase0.BeaconState:
-		return state.Validators
-	case *altair.BeaconState:
-		return state.Validators
-	case *bellatrix.BeaconState:
-		return state.Validators
-	case *capella.BeaconState:
-		return state.Validators
-	}
-	panic("badly formatted beacon state")
-}
-
-func (vbs *VersionedBeaconStateResponse) RandaoMixes() phase0.RandaoMixes {
-	switch state := vbs.Data.(type) {
-	case *phase0.BeaconState:
-		return state.RandaoMixes
-	case *altair.BeaconState:
-		return state.RandaoMixes
-	case *bellatrix.BeaconState:
-		return state.RandaoMixes
-	case *capella.BeaconState:
-		return state.RandaoMixes
-	}
-	panic("badly formatted beacon state")
-}
-
-func (vbs *VersionedBeaconStateResponse) StateSlot() common.Slot {
-	switch state := vbs.Data.(type) {
-	case *phase0.BeaconState:
-		return state.Slot
-	case *altair.BeaconState:
-		return state.Slot
-	case *bellatrix.BeaconState:
-		return state.Slot
-	case *capella.BeaconState:
-		return state.Slot
-	}
-	panic("badly formatted beacon state")
-}
-
-func (vbs *VersionedBeaconStateResponse) LatestExecutionPayloadHeaderHash() tree.Root {
-	switch state := vbs.Data.(type) {
-	case *phase0.BeaconState:
-		return tree.Root{}
-	case *altair.BeaconState:
-		return tree.Root{}
-	case *bellatrix.BeaconState:
-		return state.LatestExecutionPayloadHeader.BlockHash
-	case *capella.BeaconState:
-		return state.LatestExecutionPayloadHeader.BlockHash
-	}
-	panic("badly formatted beacon state")
-}
-
-func (vbs *VersionedBeaconStateResponse) NextWithdrawalIndex() (common.WithdrawalIndex, error) {
-	var wIndex common.WithdrawalIndex
-	switch state := vbs.Data.(type) {
-	case *capella.BeaconState:
-		wIndex = state.NextWithdrawalIndex
-	}
-	return wIndex, nil
-}
-
-func (vbs *VersionedBeaconStateResponse) NextWithdrawalValidatorIndex() (common.ValidatorIndex, error) {
-	var wIndex common.ValidatorIndex
-	switch state := vbs.Data.(type) {
-	case *capella.BeaconState:
-		wIndex = state.NextWithdrawalValidatorIndex
-	}
-	return wIndex, nil
-}
-
-func (vbs *VersionedBeaconStateResponse) NextWithdrawals(
-	slot common.Slot,
-) (common.Withdrawals, error) {
-	var (
-		withdrawalIndex common.WithdrawalIndex
-		validatorIndex  common.ValidatorIndex
-		validators      phase0.ValidatorRegistry
-		balances        phase0.Balances
-		epoch           = vbs.spec.SlotToEpoch(slot)
-	)
-	switch state := vbs.Data.(type) {
-	case *bellatrix.BeaconState:
-		// withdrawalIndex and validatorIndex start at zero
-		validators = state.Validators
-		balances = state.Balances
-	case *capella.BeaconState:
-		withdrawalIndex = state.NextWithdrawalIndex
-		validatorIndex = state.NextWithdrawalValidatorIndex
-		validators = state.Validators
-		balances = state.Balances
-	default:
-		return nil, fmt.Errorf("badly formatted beacon state")
-	}
-	validatorCount := uint64(len(validators))
-	withdrawals := make(common.Withdrawals, 0)
-
-	i := uint64(0)
-	for {
-		if validatorIndex >= common.ValidatorIndex(validatorCount) ||
-			validatorIndex >= common.ValidatorIndex(len(balances)) {
-			return nil, fmt.Errorf("invalid validator index")
-		}
-		validator := validators[validatorIndex]
-		if validator == nil {
-			return nil, fmt.Errorf("invalid validator")
-		}
-		balance := balances[validatorIndex]
-		if i >= validatorCount ||
-			i >= uint64(vbs.spec.MAX_VALIDATORS_PER_WITHDRAWALS_SWEEP) {
-			break
-		}
-		if IsFullyWithdrawableValidator(validator, balance, epoch) {
-			withdrawals = append(withdrawals, common.Withdrawal{
-				Index:          withdrawalIndex,
-				ValidatorIndex: validatorIndex,
-				Address:        Eth1WithdrawalCredential(validator),
-				Amount:         balance,
-			})
-			withdrawalIndex += 1
-		} else if IsPartiallyWithdrawableValidator(vbs.spec, validator, balance, epoch) {
-			withdrawals = append(withdrawals, common.Withdrawal{
-				Index:          withdrawalIndex,
-				ValidatorIndex: validatorIndex,
-				Address:        Eth1WithdrawalCredential(validator),
-				Amount:         balance - vbs.spec.MAX_EFFECTIVE_BALANCE,
-			})
-			withdrawalIndex += 1
-		}
-		if len(withdrawals) == int(vbs.spec.MAX_WITHDRAWALS_PER_PAYLOAD) {
-			break
-		}
-		validatorIndex = common.ValidatorIndex(
-			uint64(validatorIndex+1) % validatorCount,
-		)
-		i += 1
-	}
-	return withdrawals, nil
 }
 
 func Eth1WithdrawalCredential(validator *phase0.Validator) common.Eth1Address {
