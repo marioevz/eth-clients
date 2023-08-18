@@ -8,6 +8,7 @@ import (
 	"github.com/protolambda/zrnt/eth2/beacon/bellatrix"
 	"github.com/protolambda/zrnt/eth2/beacon/capella"
 	"github.com/protolambda/zrnt/eth2/beacon/common"
+	"github.com/protolambda/zrnt/eth2/beacon/deneb"
 	"github.com/protolambda/zrnt/eth2/beacon/phase0"
 	"github.com/protolambda/ztyp/tree"
 )
@@ -27,6 +28,8 @@ func (vbs *VersionedBeaconStateResponse) Root() tree.Root {
 		return state.HashTreeRoot(vbs.spec, tree.GetHashFn())
 	case *capella.BeaconState:
 		return state.HashTreeRoot(vbs.spec, tree.GetHashFn())
+	case *deneb.BeaconState:
+		return state.HashTreeRoot(vbs.spec, tree.GetHashFn())
 	}
 	panic("badly formatted beacon state")
 }
@@ -40,6 +43,8 @@ func (vbs *VersionedBeaconStateResponse) GenesisTime() common.Timestamp {
 	case *bellatrix.BeaconState:
 		return state.GenesisTime
 	case *capella.BeaconState:
+		return state.GenesisTime
+	case *deneb.BeaconState:
 		return state.GenesisTime
 	}
 	panic("badly formatted beacon state")
@@ -55,6 +60,8 @@ func (vbs *VersionedBeaconStateResponse) GenesisValidatorsRoot() common.Root {
 		return state.GenesisValidatorsRoot
 	case *capella.BeaconState:
 		return state.GenesisValidatorsRoot
+	case *deneb.BeaconState:
+		return state.GenesisValidatorsRoot
 	}
 	panic("badly formatted beacon state")
 }
@@ -68,6 +75,8 @@ func (vbs *VersionedBeaconStateResponse) Fork() common.Fork {
 	case *bellatrix.BeaconState:
 		return state.Fork
 	case *capella.BeaconState:
+		return state.Fork
+	case *deneb.BeaconState:
 		return state.Fork
 	}
 	panic("badly formatted beacon state")
@@ -83,6 +92,8 @@ func (vbs *VersionedBeaconStateResponse) CurrentVersion() common.Version {
 		return state.Fork.CurrentVersion
 	case *capella.BeaconState:
 		return state.Fork.CurrentVersion
+	case *deneb.BeaconState:
+		return state.Fork.CurrentVersion
 	}
 	panic("badly formatted beacon state")
 }
@@ -96,6 +107,8 @@ func (vbs *VersionedBeaconStateResponse) PreviousVersion() common.Version {
 	case *bellatrix.BeaconState:
 		return state.Fork.PreviousVersion
 	case *capella.BeaconState:
+		return state.Fork.PreviousVersion
+	case *deneb.BeaconState:
 		return state.Fork.PreviousVersion
 	}
 	panic("badly formatted beacon state")
@@ -111,6 +124,8 @@ func (vbs *VersionedBeaconStateResponse) LatestBlockHeader() common.BeaconBlockH
 		return state.LatestBlockHeader
 	case *capella.BeaconState:
 		return state.LatestBlockHeader
+	case *deneb.BeaconState:
+		return state.LatestBlockHeader
 	}
 	panic("badly formatted beacon state")
 }
@@ -124,6 +139,8 @@ func (vbs *VersionedBeaconStateResponse) BlockRoots() phase0.HistoricalBatchRoot
 	case *bellatrix.BeaconState:
 		return state.BlockRoots
 	case *capella.BeaconState:
+		return state.BlockRoots
+	case *deneb.BeaconState:
 		return state.BlockRoots
 	}
 	panic("badly formatted beacon state")
@@ -139,6 +156,8 @@ func (vbs *VersionedBeaconStateResponse) StateRoots() phase0.HistoricalBatchRoot
 		return state.StateRoots
 	case *capella.BeaconState:
 		return state.StateRoots
+	case *deneb.BeaconState:
+		return state.StateRoots
 	}
 	panic("badly formatted beacon state")
 }
@@ -152,6 +171,8 @@ func (vbs *VersionedBeaconStateResponse) HistoricalRoots() phase0.HistoricalRoot
 	case *bellatrix.BeaconState:
 		return state.HistoricalRoots
 	case *capella.BeaconState:
+		return state.HistoricalRoots
+	case *deneb.BeaconState:
 		return state.HistoricalRoots
 	}
 	panic("badly formatted beacon state")
@@ -167,6 +188,8 @@ func (vbs *VersionedBeaconStateResponse) Eth1Data() common.Eth1Data {
 		return state.Eth1Data
 	case *capella.BeaconState:
 		return state.Eth1Data
+	case *deneb.BeaconState:
+		return state.Eth1Data
 	}
 	panic("badly formatted beacon state")
 }
@@ -180,6 +203,8 @@ func (vbs *VersionedBeaconStateResponse) Eth1DataVotes() phase0.Eth1DataVotes {
 	case *bellatrix.BeaconState:
 		return state.Eth1DataVotes
 	case *capella.BeaconState:
+		return state.Eth1DataVotes
+	case *deneb.BeaconState:
 		return state.Eth1DataVotes
 	}
 	panic("badly formatted beacon state")
@@ -195,6 +220,8 @@ func (vbs *VersionedBeaconStateResponse) Eth1DepositIndex() common.DepositIndex 
 		return state.Eth1DepositIndex
 	case *capella.BeaconState:
 		return state.Eth1DepositIndex
+	case *deneb.BeaconState:
+		return state.Eth1DepositIndex
 	}
 	panic("badly formatted beacon state")
 }
@@ -208,6 +235,8 @@ func (vbs *VersionedBeaconStateResponse) Balances() phase0.Balances {
 	case *bellatrix.BeaconState:
 		return state.Balances
 	case *capella.BeaconState:
+		return state.Balances
+	case *deneb.BeaconState:
 		return state.Balances
 	}
 	panic("badly formatted beacon state")
@@ -233,6 +262,8 @@ func (vbs *VersionedBeaconStateResponse) Validators() phase0.ValidatorRegistry {
 		return state.Validators
 	case *capella.BeaconState:
 		return state.Validators
+	case *deneb.BeaconState:
+		return state.Validators
 	}
 	panic("badly formatted beacon state")
 }
@@ -246,6 +277,8 @@ func (vbs *VersionedBeaconStateResponse) RandaoMixes() phase0.RandaoMixes {
 	case *bellatrix.BeaconState:
 		return state.RandaoMixes
 	case *capella.BeaconState:
+		return state.RandaoMixes
+	case *deneb.BeaconState:
 		return state.RandaoMixes
 	}
 	panic("badly formatted beacon state")
@@ -261,6 +294,8 @@ func (vbs *VersionedBeaconStateResponse) Slashings() phase0.SlashingsHistory {
 		return state.Slashings
 	case *capella.BeaconState:
 		return state.Slashings
+	case *deneb.BeaconState:
+		return state.Slashings
 	}
 	panic("badly formatted beacon state")
 }
@@ -274,6 +309,8 @@ func (vbs *VersionedBeaconStateResponse) PreviousEpochAttestations() phase0.Pend
 	case *bellatrix.BeaconState:
 		return nil
 	case *capella.BeaconState:
+		return nil
+	case *deneb.BeaconState:
 		return nil
 	}
 	panic("badly formatted beacon state")
@@ -289,6 +326,8 @@ func (vbs *VersionedBeaconStateResponse) CurrentEpochAttestations() phase0.Pendi
 		return nil
 	case *capella.BeaconState:
 		return nil
+	case *deneb.BeaconState:
+		return nil
 	}
 	panic("badly formatted beacon state")
 }
@@ -303,6 +342,8 @@ func (vbs *VersionedBeaconStateResponse) PreviousEpochParticipation() altair.Par
 		return state.PreviousEpochParticipation
 	case *capella.BeaconState:
 		return state.PreviousEpochParticipation
+	case *deneb.BeaconState:
+		return state.PreviousEpochParticipation
 	}
 	panic("badly formatted beacon state")
 }
@@ -316,6 +357,8 @@ func (vbs *VersionedBeaconStateResponse) CurrentEpochParticipation() altair.Part
 	case *bellatrix.BeaconState:
 		return state.CurrentEpochParticipation
 	case *capella.BeaconState:
+		return state.CurrentEpochParticipation
+	case *deneb.BeaconState:
 		return state.CurrentEpochParticipation
 	}
 	panic("badly formatted beacon state")
@@ -332,6 +375,8 @@ func (vbs *VersionedBeaconStateResponse) JustificationBits() common.Justificatio
 		return state.JustificationBits
 	case *capella.BeaconState:
 		return state.JustificationBits
+	case *deneb.BeaconState:
+		return state.JustificationBits
 	}
 	panic("badly formatted beacon state")
 }
@@ -345,6 +390,8 @@ func (vbs *VersionedBeaconStateResponse) PreviousJustifiedCheckpoint() common.Ch
 	case *bellatrix.BeaconState:
 		return state.PreviousJustifiedCheckpoint
 	case *capella.BeaconState:
+		return state.PreviousJustifiedCheckpoint
+	case *deneb.BeaconState:
 		return state.PreviousJustifiedCheckpoint
 	}
 	panic("badly formatted beacon state")
@@ -360,6 +407,8 @@ func (vbs *VersionedBeaconStateResponse) CurrentJustifiedCheckpoint() common.Che
 		return state.CurrentJustifiedCheckpoint
 	case *capella.BeaconState:
 		return state.CurrentJustifiedCheckpoint
+	case *deneb.BeaconState:
+		return state.CurrentJustifiedCheckpoint
 	}
 	panic("badly formatted beacon state")
 }
@@ -373,6 +422,8 @@ func (vbs *VersionedBeaconStateResponse) FinalizedCheckpoint() common.Checkpoint
 	case *bellatrix.BeaconState:
 		return state.FinalizedCheckpoint
 	case *capella.BeaconState:
+		return state.FinalizedCheckpoint
+	case *deneb.BeaconState:
 		return state.FinalizedCheckpoint
 	}
 	panic("badly formatted beacon state")
@@ -390,6 +441,8 @@ func (vbs *VersionedBeaconStateResponse) InactivityScores() altair.InactivitySco
 		return state.InactivityScores
 	case *capella.BeaconState:
 		return state.InactivityScores
+	case *deneb.BeaconState:
+		return state.InactivityScores
 	}
 	panic("badly formatted beacon state")
 }
@@ -405,6 +458,8 @@ func (vbs *VersionedBeaconStateResponse) CurrentSyncCommittee() *common.SyncComm
 		return &state.CurrentSyncCommittee
 	case *capella.BeaconState:
 		return &state.CurrentSyncCommittee
+	case *deneb.BeaconState:
+		return &state.CurrentSyncCommittee
 	}
 	panic("badly formatted beacon state")
 }
@@ -418,6 +473,8 @@ func (vbs *VersionedBeaconStateResponse) NextSyncCommittee() *common.SyncCommitt
 	case *bellatrix.BeaconState:
 		return &state.NextSyncCommittee
 	case *capella.BeaconState:
+		return &state.NextSyncCommittee
+	case *deneb.BeaconState:
 		return &state.NextSyncCommittee
 	}
 	panic("badly formatted beacon state")
@@ -433,6 +490,8 @@ func (vbs *VersionedBeaconStateResponse) StateSlot() common.Slot {
 		return state.Slot
 	case *capella.BeaconState:
 		return state.Slot
+	case *deneb.BeaconState:
+		return state.Slot
 	}
 	panic("badly formatted beacon state")
 }
@@ -447,6 +506,8 @@ func (vbs *VersionedBeaconStateResponse) LatestExecutionPayloadHeaderHash() tree
 		return state.LatestExecutionPayloadHeader.BlockHash
 	case *capella.BeaconState:
 		return state.LatestExecutionPayloadHeader.BlockHash
+	case *deneb.BeaconState:
+		return state.LatestExecutionPayloadHeader.BlockHash
 	}
 	panic("badly formatted beacon state")
 }
@@ -456,6 +517,8 @@ func (vbs *VersionedBeaconStateResponse) NextWithdrawalIndex() (common.Withdrawa
 	switch state := vbs.Data.(type) {
 	case *capella.BeaconState:
 		wIndex = state.NextWithdrawalIndex
+	case *deneb.BeaconState:
+		wIndex = state.NextWithdrawalIndex
 	}
 	return wIndex, nil
 }
@@ -464,6 +527,8 @@ func (vbs *VersionedBeaconStateResponse) NextWithdrawalValidatorIndex() (common.
 	var wIndex common.ValidatorIndex
 	switch state := vbs.Data.(type) {
 	case *capella.BeaconState:
+		wIndex = state.NextWithdrawalValidatorIndex
+	case *deneb.BeaconState:
 		wIndex = state.NextWithdrawalValidatorIndex
 	}
 	return wIndex, nil
@@ -485,6 +550,11 @@ func (vbs *VersionedBeaconStateResponse) NextWithdrawals(
 		validators = state.Validators
 		balances = state.Balances
 	case *capella.BeaconState:
+		withdrawalIndex = state.NextWithdrawalIndex
+		validatorIndex = state.NextWithdrawalValidatorIndex
+		validators = state.Validators
+		balances = state.Balances
+	case *deneb.BeaconState:
 		withdrawalIndex = state.NextWithdrawalIndex
 		validatorIndex = state.NextWithdrawalValidatorIndex
 		validators = state.Validators

@@ -676,7 +676,7 @@ func (b *BeaconClient) WaitForExecutionPayload(
 
 			if versionedBlock, err := b.BlockV2(ctx, eth2api.BlockIdRoot(headInfo.Root)); err != nil {
 				continue
-			} else if executionPayload, err := versionedBlock.ExecutionPayload(); err == nil {
+			} else if executionPayload, _, _, err := versionedBlock.ExecutionPayload(); err == nil {
 				copy(
 					execution[:],
 					executionPayload.BlockHash[:],
@@ -755,7 +755,7 @@ func (bn *BeaconClient) GetLatestExecutionBeaconBlock(
 		if err != nil {
 			return nil, fmt.Errorf("failed to retrieve block: %v", err)
 		}
-		if executionPayload, err := versionedBlock.ExecutionPayload(); err == nil {
+		if executionPayload, _, _, err := versionedBlock.ExecutionPayload(); err == nil {
 			if !bytes.Equal(
 				executionPayload.BlockHash[:],
 				EMPTY_TREE_ROOT[:],
@@ -782,7 +782,7 @@ func (bn *BeaconClient) GetFirstExecutionBeaconBlock(
 		if err != nil {
 			continue
 		}
-		if executionPayload, err := versionedBlock.ExecutionPayload(); err == nil {
+		if executionPayload, _, _, err := versionedBlock.ExecutionPayload(); err == nil {
 			if !bytes.Equal(
 				executionPayload.BlockHash[:],
 				EMPTY_TREE_ROOT[:],
@@ -807,7 +807,7 @@ func (bn *BeaconClient) GetBeaconBlockByExecutionHash(
 		if err != nil {
 			continue
 		}
-		if executionPayload, err := versionedBlock.ExecutionPayload(); err == nil {
+		if executionPayload, _, _, err := versionedBlock.ExecutionPayload(); err == nil {
 			if !bytes.Equal(executionPayload.BlockHash[:], hash[:]) {
 				return versionedBlock, nil
 			}
@@ -955,7 +955,7 @@ func (runningBeacons BeaconClients) PrintStatus(
 		}
 		if versionedBlock, err := b.BlockV2(ctx, eth2api.BlockHead); err == nil {
 			version = versionedBlock.Version
-			if executionPayload, err := versionedBlock.ExecutionPayload(); err == nil {
+			if executionPayload, _, _, err := versionedBlock.ExecutionPayload(); err == nil {
 				execution = utils.Shorten(
 					executionPayload.BlockHash.String(),
 				)
