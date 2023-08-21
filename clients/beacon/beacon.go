@@ -18,6 +18,7 @@ import (
 	"github.com/protolambda/eth2api/client/beaconapi"
 	"github.com/protolambda/eth2api/client/debugapi"
 	"github.com/protolambda/eth2api/client/nodeapi"
+	"github.com/protolambda/eth2api/client/validatorapi"
 	"github.com/protolambda/zrnt/eth2/beacon/common"
 	"github.com/protolambda/zrnt/eth2/beacon/phase0"
 	"github.com/protolambda/zrnt/eth2/configs"
@@ -381,6 +382,41 @@ func (bn *BeaconClient) StateValidator(
 		return nil, fmt.Errorf("endpoint not found on beacon client")
 	}
 	return stateValidatorResponse, err
+}
+
+func (bn *BeaconClient) ProposerIndex(
+	parentCtx context.Context,
+	slot common.Slot,
+) (common.ValidatorIndex, error) {
+	var (
+		proposerDutyResponse = new(eth2api.DependentProposerDuty)
+		epoch                = bn.Config.Spec.SlotToEpoch(slot)
+		exists               bool
+		err                  error
+	)
+	ctx, cancel := utils.ContextTimeoutRPC(parentCtx)
+	defer cancel()
+	exists, err = validatorapi.ProposerDuties(
+		ctx,
+		bn.api,
+		epoch,
+		proposerDutyResponse,
+	)
+	if err != nil {
+		return 0, err
+	}
+	if !exists {
+		return 0, fmt.Errorf("endpoint not found on beacon client")
+	}
+	if proposerDutyResponse.Data == nil {
+		return 0, fmt.Errorf("no proposer duty data")
+	}
+	for _, duty := range proposerDutyResponse.Data {
+		if duty.Slot == slot {
+			return duty.ValidatorIndex, nil
+		}
+	}
+	return 0, fmt.Errorf("no proposer duty found for slot %d", slot)
 }
 
 func (bn *BeaconClient) StateFinalityCheckpoints(
