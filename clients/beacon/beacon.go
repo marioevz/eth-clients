@@ -391,12 +391,12 @@ func (bn *BeaconClient) ProposerIndex(
 	var (
 		proposerDutyResponse = new(eth2api.DependentProposerDuty)
 		epoch                = bn.Config.Spec.SlotToEpoch(slot)
-		exists               bool
+		syncing               bool
 		err                  error
 	)
 	ctx, cancel := utils.ContextTimeoutRPC(parentCtx)
 	defer cancel()
-	exists, err = validatorapi.ProposerDuties(
+	syncing, err = validatorapi.ProposerDuties(
 		ctx,
 		bn.api,
 		epoch,
@@ -405,8 +405,8 @@ func (bn *BeaconClient) ProposerIndex(
 	if err != nil {
 		return 0, err
 	}
-	if !exists {
-		return 0, fmt.Errorf("endpoint not found on beacon client")
+	if syncing {
+		return 0, fmt.Errorf("beacon client is syncing")
 	}
 	if proposerDutyResponse.Data == nil {
 		return 0, fmt.Errorf("no proposer duty data")
