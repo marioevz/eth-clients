@@ -391,7 +391,7 @@ func (en *ExecutionClient) EngineGetPayload(
 
 	ctx, cancel := context.WithTimeout(parentCtx, time.Second*10)
 	defer cancel()
-	if version == 2 {
+	if version >= 2 {
 		var response api.ExecutionPayloadEnvelope
 		err := en.engineRpcClient.CallContext(
 			ctx,
