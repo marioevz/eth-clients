@@ -16,6 +16,7 @@ import (
 
 	"github.com/protolambda/eth2api"
 	"github.com/protolambda/eth2api/client/beaconapi"
+	"github.com/protolambda/eth2api/client/builderapi"
 	"github.com/protolambda/eth2api/client/debugapi"
 	"github.com/protolambda/eth2api/client/nodeapi"
 	"github.com/protolambda/eth2api/client/validatorapi"
@@ -489,6 +490,35 @@ func (bn *BeaconClient) StateRandaoMix(
 		return nil, err
 	}
 	return &resp.RandaoMix, err
+}
+
+func (bn *BeaconClient) ExpectedWithdrawals(
+	parentCtx context.Context,
+	stateId eth2api.StateId,
+) (common.Withdrawals, error) {
+	var (
+		resp   = new(common.Withdrawals)
+		exists bool
+		err    error
+	)
+	ctx, cancel := utils.ContextTimeoutRPC(parentCtx)
+	defer cancel()
+	exists, err = builderapi.ExpectedWithdrawals(
+		ctx,
+		bn.api,
+		stateId,
+		resp,
+	)
+	if !exists {
+		return nil, fmt.Errorf("endpoint not found on beacon client")
+	}
+	if err != nil {
+		return nil, err
+	}
+	if resp == nil {
+		return nil, fmt.Errorf("nil expected withdrawals")
+	}
+	return *resp, err
 }
 
 func (bn *BeaconClient) BlockFinalityCheckpoints(
