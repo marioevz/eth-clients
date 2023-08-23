@@ -226,3 +226,19 @@ func (b *VersionedSignedBeaconBlock) ProposerIndex() common.ValidatorIndex {
 	}
 	panic("badly formatted beacon block")
 }
+
+func (b *VersionedSignedBeaconBlock) ExecutionPayloadBlockHash() *tree.Root {
+	switch v := b.Data.(type) {
+	case *phase0.SignedBeaconBlock:
+		return nil
+	case *altair.SignedBeaconBlock:
+		return nil
+	case *bellatrix.SignedBeaconBlock:
+		return (*tree.Root)(&v.Message.Body.ExecutionPayload.BlockHash)
+	case *capella.SignedBeaconBlock:
+		return (*tree.Root)(&v.Message.Body.ExecutionPayload.BlockHash)
+	case *deneb.SignedBeaconBlock:
+		return (*tree.Root)(&v.Message.Body.ExecutionPayload.BlockHash)
+	}
+	panic("badly formatted beacon block")
+}
