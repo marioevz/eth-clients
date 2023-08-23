@@ -391,7 +391,7 @@ func (bn *BeaconClient) ProposerIndex(
 	var (
 		proposerDutyResponse = new(eth2api.DependentProposerDuty)
 		epoch                = bn.Config.Spec.SlotToEpoch(slot)
-		syncing               bool
+		syncing              bool
 		err                  error
 	)
 	ctx, cancel := utils.ContextTimeoutRPC(parentCtx)
@@ -463,6 +463,32 @@ func (bn *BeaconClient) StateFork(
 		return nil, fmt.Errorf("endpoint not found on beacon client")
 	}
 	return fork, err
+}
+
+func (bn *BeaconClient) StateRandaoMix(
+	parentCtx context.Context,
+	stateId eth2api.StateId,
+) (*tree.Root, error) {
+	var (
+		resp   = new(eth2api.RandaoMixResponse)
+		exists bool
+		err    error
+	)
+	ctx, cancel := utils.ContextTimeoutRPC(parentCtx)
+	defer cancel()
+	exists, err = beaconapi.RandaoMix(
+		ctx,
+		bn.api,
+		stateId,
+		resp,
+	)
+	if !exists {
+		return nil, fmt.Errorf("endpoint not found on beacon client")
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &resp.RandaoMix, err
 }
 
 func (bn *BeaconClient) BlockFinalityCheckpoints(
