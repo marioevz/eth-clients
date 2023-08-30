@@ -31,25 +31,31 @@ const (
 var AllForkchoiceUpdatedCalls = []string{
 	"engine_forkchoiceUpdatedV1",
 	"engine_forkchoiceUpdatedV2",
+	"engine_forkchoiceUpdatedV3",
 }
 
 var AllGetPayloadCalls = []string{
 	"engine_getPayloadV1",
 	"engine_getPayloadV2",
+	"engine_getPayloadV3",
 }
 
 var AllNewPayloadCalls = []string{
 	"engine_newPayloadV1",
 	"engine_newPayloadV2",
+	"engine_newPayloadV3",
 }
 
 var AllEngineCalls = []string{
 	"engine_forkchoiceUpdatedV1",
 	"engine_forkchoiceUpdatedV2",
+	"engine_forkchoiceUpdatedV3",
 	"engine_getPayloadV1",
 	"engine_getPayloadV2",
+	"engine_getPayloadV3",
 	"engine_newPayloadV1",
 	"engine_newPayloadV2",
+	"engine_newPayloadV3",
 }
 
 type EnodeClient interface {
@@ -213,6 +219,12 @@ func (en *ExecutionClient) Init(ctx context.Context) error {
 					)
 					if err == nil {
 						en.latestfcu = &fcState
+					} else {
+						en.Logf(
+							"Error trying to unmarshal forkchoice state: %v. Latest FCU will be nil",
+							err,
+						)
+						en.latestfcu = nil
 					}
 					return nil
 				}
