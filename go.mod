@@ -30,7 +30,7 @@ require (
 	github.com/crate-crypto/go-kzg-4844 v0.3.0 // indirect
 	github.com/deckarep/golang-set/v2 v2.1.0 // indirect
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.0.1 // indirect
-	github.com/ethereum/c-kzg-4844 v0.3.0 // indirect
+	github.com/ethereum/c-kzg-4844 v0.3.1 // indirect
 	github.com/getsentry/sentry-go v0.18.0 // indirect
 	github.com/go-ole/go-ole v1.2.1 // indirect
 	github.com/go-stack/stack v1.8.1 // indirect
@@ -63,7 +63,7 @@ require (
 	github.com/tklauser/go-sysconf v0.3.5 // indirect
 	github.com/tklauser/numcpus v0.2.2 // indirect
 	golang.org/x/crypto v0.9.0 // indirect
-	golang.org/x/exp v0.0.0-20230515195305-f3d0a9c9a5cc // indirect
+	golang.org/x/exp v0.0.0-20230810033253-352e893a4cad // indirect
 	golang.org/x/sync v0.3.0 // indirect
 	golang.org/x/sys v0.9.0 // indirect
 	golang.org/x/text v0.9.0 // indirect
@@ -73,8 +73,8 @@ require (
 	rsc.io/tmplfunc v0.0.3 // indirect
 )
 
-replace github.com/ethereum/go-ethereum => github.com/lightclient/go-ethereum v1.10.10-0.20230814210040-946a2dae2e9e
+replace github.com/ethereum/go-ethereum => github.com/lightclient/go-ethereum v1.10.10-0.20230822214239-edf4ab3a0003
 
-replace github.com/protolambda/zrnt => github.com/marioevz/zrnt v0.26.2-0.20230816225516-68d785cbfc26
+replace github.com/protolambda/zrnt => github.com/marioevz/zrnt v0.26.2-0.20230828221005-1d19677eb45d
 
 replace github.com/protolambda/eth2api => github.com/marioevz/eth2api v0.0.0-20230823170424-c49aeeefbc40
