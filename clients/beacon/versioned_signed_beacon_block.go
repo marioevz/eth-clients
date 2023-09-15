@@ -160,7 +160,7 @@ func (b *VersionedSignedBeaconBlock) Root() tree.Root {
 	case *deneb.SignedBeaconBlock:
 		return v.Message.HashTreeRoot(b.spec, tree.GetHashFn())
 	}
-	panic("badly formatted beacon block")
+	panic(fmt.Errorf("badly formatted beacon block, type=%T", b.Data))
 }
 
 func (b *VersionedSignedBeaconBlock) StateRoot() tree.Root {
@@ -176,7 +176,7 @@ func (b *VersionedSignedBeaconBlock) StateRoot() tree.Root {
 	case *deneb.SignedBeaconBlock:
 		return v.Message.StateRoot
 	}
-	panic("badly formatted beacon block")
+	panic(fmt.Errorf("badly formatted beacon block, type=%T", b.Data))
 }
 
 func (b *VersionedSignedBeaconBlock) ParentRoot() tree.Root {
@@ -192,7 +192,7 @@ func (b *VersionedSignedBeaconBlock) ParentRoot() tree.Root {
 	case *deneb.SignedBeaconBlock:
 		return v.Message.ParentRoot
 	}
-	panic("badly formatted beacon block")
+	panic(fmt.Errorf("badly formatted beacon block, type=%T", b.Data))
 }
 
 func (b *VersionedSignedBeaconBlock) Slot() common.Slot {
@@ -208,7 +208,7 @@ func (b *VersionedSignedBeaconBlock) Slot() common.Slot {
 	case *deneb.SignedBeaconBlock:
 		return v.Message.Slot
 	}
-	panic("badly formatted beacon block")
+	panic(fmt.Errorf("badly formatted beacon block, type=%T", b.Data))
 }
 
 func (b *VersionedSignedBeaconBlock) ProposerIndex() common.ValidatorIndex {
@@ -224,7 +224,7 @@ func (b *VersionedSignedBeaconBlock) ProposerIndex() common.ValidatorIndex {
 	case *deneb.SignedBeaconBlock:
 		return v.Message.ProposerIndex
 	}
-	panic("badly formatted beacon block")
+	panic(fmt.Errorf("badly formatted beacon block, type=%T", b.Data))
 }
 
 func (b *VersionedSignedBeaconBlock) ExecutionPayloadBlockHash() *tree.Root {
@@ -240,5 +240,5 @@ func (b *VersionedSignedBeaconBlock) ExecutionPayloadBlockHash() *tree.Root {
 	case *deneb.SignedBeaconBlock:
 		return (*tree.Root)(&v.Message.Body.ExecutionPayload.BlockHash)
 	}
-	panic("badly formatted beacon block")
+	panic(fmt.Errorf("badly formatted beacon block, type=%T", b.Data))
 }
