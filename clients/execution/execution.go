@@ -582,13 +582,22 @@ func (ec *ExecutionClient) BalanceAt(
 	return ec.eth.BalanceAt(ctx, account, n)
 }
 
+type BinaryMarshable interface {
+	MarshalBinary() ([]byte, error)
+}
+
 func (ec *ExecutionClient) SendTransaction(
 	parentCtx context.Context,
-	tx *types.Transaction,
+	tx BinaryMarshable,
 ) error {
+	data, err := tx.MarshalBinary()
+	if err != nil {
+		return err
+	}
 	ctx, cancel := utils.ContextTimeoutRPC(parentCtx)
 	defer cancel()
-	return ec.eth.SendTransaction(ctx, tx)
+
+	return ec.ethRpcClient.CallContext(ctx, nil, "eth_sendRawTransaction", hexutil.Encode(data))
 }
 
 type ExecutionClients []*ExecutionClient
