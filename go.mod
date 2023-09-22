@@ -77,6 +77,6 @@ require (
 
 replace github.com/ethereum/go-ethereum => github.com/lightclient/go-ethereum v1.10.10-0.20230829211949-79f3c2d9c96b
 
-replace github.com/protolambda/zrnt => github.com/marioevz/zrnt v0.26.2-0.20230914180617-c828a93a4d2a
+replace github.com/protolambda/zrnt => github.com/marioevz/zrnt v0.26.2-0.20230922170744-1bd341bc7f0f
 
-replace github.com/protolambda/eth2api => github.com/marioevz/eth2api v0.0.0-20230823170424-c49aeeefbc40
+replace github.com/protolambda/eth2api => github.com/marioevz/eth2api v0.0.0-20230922201437-72bd1301e033
