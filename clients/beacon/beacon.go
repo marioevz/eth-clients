@@ -21,6 +21,7 @@ import (
 	"github.com/protolambda/eth2api/client/nodeapi"
 	"github.com/protolambda/eth2api/client/validatorapi"
 	"github.com/protolambda/zrnt/eth2/beacon/common"
+	"github.com/protolambda/zrnt/eth2/beacon/deneb"
 	"github.com/protolambda/zrnt/eth2/beacon/phase0"
 	"github.com/protolambda/zrnt/eth2/configs"
 	"github.com/protolambda/ztyp/tree"
@@ -358,6 +359,24 @@ func (bn *BeaconClient) BlockHeader(
 		return nil, fmt.Errorf("endpoint not found on beacon client")
 	}
 	return headInfo, err
+}
+
+func (bn *BeaconClient) BlobSidecars(
+	parentCtx context.Context,
+	blockId eth2api.BlockId,
+) ([]deneb.BlobSidecar, error) {
+	var (
+		blobSidecars = new([]deneb.BlobSidecar)
+		exists       bool
+		err          error
+	)
+	ctx, cancel := utils.ContextTimeoutRPC(parentCtx)
+	defer cancel()
+	exists, err = beaconapi.BlobSidecars(ctx, bn.api, blockId, blobSidecars)
+	if !exists {
+		return nil, fmt.Errorf("endpoint not found on beacon client")
+	}
+	return *blobSidecars, err
 }
 
 func (bn *BeaconClient) StateValidator(
