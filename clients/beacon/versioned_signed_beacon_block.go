@@ -33,6 +33,10 @@ func (versionedBlock *VersionedSignedBeaconBlock) ContainsExecutionPayload() boo
 		versionedBlock.Version == "deneb"
 }
 
+func (versionedBlock *VersionedSignedBeaconBlock) ContainsKZGCommitments() bool {
+	return versionedBlock.Version == "deneb"
+}
+
 func KZGCommitmentsToVersionedHashes(kzgCommitments []common.KZGCommitment) []el_common.Hash {
 	versionedHashes := make([]el_common.Hash, len(kzgCommitments))
 	for i, kzgCommitment := range kzgCommitments {
@@ -239,6 +243,22 @@ func (b *VersionedSignedBeaconBlock) ExecutionPayloadBlockHash() *tree.Root {
 		return (*tree.Root)(&v.Message.Body.ExecutionPayload.BlockHash)
 	case *deneb.SignedBeaconBlock:
 		return (*tree.Root)(&v.Message.Body.ExecutionPayload.BlockHash)
+	}
+	panic(fmt.Errorf("badly formatted beacon block, type=%T", b.Data))
+}
+
+func (b *VersionedSignedBeaconBlock) KZGCommitments() common.KZGCommitments {
+	switch v := b.Data.(type) {
+	case *phase0.SignedBeaconBlock:
+		return nil
+	case *altair.SignedBeaconBlock:
+		return nil
+	case *bellatrix.SignedBeaconBlock:
+		return nil
+	case *capella.SignedBeaconBlock:
+		return nil
+	case *deneb.SignedBeaconBlock:
+		return v.Message.Body.BlobKZGCommitments
 	}
 	panic(fmt.Errorf("badly formatted beacon block, type=%T", b.Data))
 }
