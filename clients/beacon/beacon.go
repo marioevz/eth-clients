@@ -167,9 +167,6 @@ func (bn *BeaconClient) ENR(parentCtx context.Context) (string, error) {
 	if err := nodeapi.Identity(ctx, bn.api, &out); err != nil {
 		return "", err
 	}
-	bn.Logf("p2p addrs: %v\n", out.P2PAddresses)
-	bn.Logf("peer id: %s\n", out.PeerID)
-	bn.Logf("enr: %s\n", out.ENR)
 	return out.ENR, nil
 }
 
