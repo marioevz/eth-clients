@@ -31,25 +31,31 @@ const (
 var AllForkchoiceUpdatedCalls = []string{
 	"engine_forkchoiceUpdatedV1",
 	"engine_forkchoiceUpdatedV2",
+	"engine_forkchoiceUpdatedV3",
 }
 
 var AllGetPayloadCalls = []string{
 	"engine_getPayloadV1",
 	"engine_getPayloadV2",
+	"engine_getPayloadV3",
 }
 
 var AllNewPayloadCalls = []string{
 	"engine_newPayloadV1",
 	"engine_newPayloadV2",
+	"engine_newPayloadV3",
 }
 
 var AllEngineCalls = []string{
 	"engine_forkchoiceUpdatedV1",
 	"engine_forkchoiceUpdatedV2",
+	"engine_forkchoiceUpdatedV3",
 	"engine_getPayloadV1",
 	"engine_getPayloadV2",
+	"engine_getPayloadV3",
 	"engine_newPayloadV1",
 	"engine_newPayloadV2",
+	"engine_newPayloadV3",
 }
 
 type EnodeClient interface {
@@ -213,6 +219,12 @@ func (en *ExecutionClient) Init(ctx context.Context) error {
 					)
 					if err == nil {
 						en.latestfcu = &fcState
+					} else {
+						en.Logf(
+							"Error trying to unmarshal forkchoice state: %v. Latest FCU will be nil",
+							err,
+						)
+						en.latestfcu = nil
 					}
 					return nil
 				}
@@ -379,35 +391,31 @@ func (en *ExecutionClient) EngineGetPayload(
 	parentCtx context.Context,
 	payloadID *api.PayloadID,
 	version int,
-) (*api.ExecutableData, *big.Int, error) {
+) (*api.ExecutableData, *big.Int, *api.BlobsBundleV1, *bool, error) {
 
 	var (
 		rpcString = fmt.Sprintf("engine_getPayloadV%d", version)
 	)
 
 	if err := en.PrepareDefaultAuthCallToken(); err != nil {
-		return nil, nil, err
+		return nil, nil, nil, nil, err
 	}
 
 	ctx, cancel := context.WithTimeout(parentCtx, time.Second*10)
 	defer cancel()
-	if version == 2 {
-		type ExecutionPayloadEnvelope struct {
-			ExecutionPayload *api.ExecutableData `json:"executionPayload" gencodec:"required"`
-			BlockValue       *hexutil.Big        `json:"blockValue"       gencodec:"required"`
-		}
-		var response ExecutionPayloadEnvelope
+	if version >= 2 {
+		var response api.ExecutionPayloadEnvelope
 		err := en.engineRpcClient.CallContext(
 			ctx,
 			&response,
 			rpcString,
 			payloadID,
 		)
-		return response.ExecutionPayload, (*big.Int)(response.BlockValue), err
+		return response.ExecutionPayload, response.BlockValue, response.BlobsBundle, &response.Override, err
 	} else {
 		var executableData api.ExecutableData
 		err := en.engineRpcClient.CallContext(ctx, &executableData, rpcString, payloadID)
-		return &executableData, common.Big0, err
+		return &executableData, common.Big0, nil, nil, err
 	}
 }
 
@@ -574,13 +582,22 @@ func (ec *ExecutionClient) BalanceAt(
 	return ec.eth.BalanceAt(ctx, account, n)
 }
 
+type BinaryMarshable interface {
+	MarshalBinary() ([]byte, error)
+}
+
 func (ec *ExecutionClient) SendTransaction(
 	parentCtx context.Context,
-	tx *types.Transaction,
+	tx BinaryMarshable,
 ) error {
+	data, err := tx.MarshalBinary()
+	if err != nil {
+		return err
+	}
 	ctx, cancel := utils.ContextTimeoutRPC(parentCtx)
 	defer cancel()
-	return ec.eth.SendTransaction(ctx, tx)
+
+	return ec.ethRpcClient.CallContext(ctx, nil, "eth_sendRawTransaction", hexutil.Encode(data))
 }
 
 type ExecutionClients []*ExecutionClient

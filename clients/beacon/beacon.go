@@ -16,9 +16,12 @@ import (
 
 	"github.com/protolambda/eth2api"
 	"github.com/protolambda/eth2api/client/beaconapi"
+	"github.com/protolambda/eth2api/client/builderapi"
 	"github.com/protolambda/eth2api/client/debugapi"
 	"github.com/protolambda/eth2api/client/nodeapi"
+	"github.com/protolambda/eth2api/client/validatorapi"
 	"github.com/protolambda/zrnt/eth2/beacon/common"
+	"github.com/protolambda/zrnt/eth2/beacon/deneb"
 	"github.com/protolambda/zrnt/eth2/beacon/phase0"
 	"github.com/protolambda/zrnt/eth2/configs"
 	"github.com/protolambda/ztyp/tree"
@@ -164,9 +167,6 @@ func (bn *BeaconClient) ENR(parentCtx context.Context) (string, error) {
 	if err := nodeapi.Identity(ctx, bn.api, &out); err != nil {
 		return "", err
 	}
-	bn.Logf("p2p addrs: %v\n", out.P2PAddresses)
-	bn.Logf("peer id: %s\n", out.PeerID)
-	bn.Logf("enr: %s\n", out.ENR)
 	return out.ENR, nil
 }
 
@@ -358,6 +358,24 @@ func (bn *BeaconClient) BlockHeader(
 	return headInfo, err
 }
 
+func (bn *BeaconClient) BlobSidecars(
+	parentCtx context.Context,
+	blockId eth2api.BlockId,
+) ([]deneb.BlobSidecar, error) {
+	var (
+		blobSidecars = new([]deneb.BlobSidecar)
+		exists       bool
+		err          error
+	)
+	ctx, cancel := utils.ContextTimeoutRPC(parentCtx)
+	defer cancel()
+	exists, err = beaconapi.BlobSidecars(ctx, bn.api, blockId, blobSidecars)
+	if !exists {
+		return nil, fmt.Errorf("endpoint not found on beacon client")
+	}
+	return *blobSidecars, err
+}
+
 func (bn *BeaconClient) StateValidator(
 	parentCtx context.Context,
 	stateId eth2api.StateId,
@@ -381,6 +399,41 @@ func (bn *BeaconClient) StateValidator(
 		return nil, fmt.Errorf("endpoint not found on beacon client")
 	}
 	return stateValidatorResponse, err
+}
+
+func (bn *BeaconClient) ProposerIndex(
+	parentCtx context.Context,
+	slot common.Slot,
+) (common.ValidatorIndex, error) {
+	var (
+		proposerDutyResponse = new(eth2api.DependentProposerDuty)
+		epoch                = bn.Config.Spec.SlotToEpoch(slot)
+		syncing              bool
+		err                  error
+	)
+	ctx, cancel := utils.ContextTimeoutRPC(parentCtx)
+	defer cancel()
+	syncing, err = validatorapi.ProposerDuties(
+		ctx,
+		bn.api,
+		epoch,
+		proposerDutyResponse,
+	)
+	if err != nil {
+		return 0, err
+	}
+	if syncing {
+		return 0, fmt.Errorf("beacon client is syncing")
+	}
+	if proposerDutyResponse.Data == nil {
+		return 0, fmt.Errorf("no proposer duty data")
+	}
+	for _, duty := range proposerDutyResponse.Data {
+		if duty.Slot == slot {
+			return duty.ValidatorIndex, nil
+		}
+	}
+	return 0, fmt.Errorf("no proposer duty found for slot %d", slot)
 }
 
 func (bn *BeaconClient) StateFinalityCheckpoints(
@@ -427,6 +480,61 @@ func (bn *BeaconClient) StateFork(
 		return nil, fmt.Errorf("endpoint not found on beacon client")
 	}
 	return fork, err
+}
+
+func (bn *BeaconClient) StateRandaoMix(
+	parentCtx context.Context,
+	stateId eth2api.StateId,
+) (*tree.Root, error) {
+	var (
+		resp   = new(eth2api.RandaoMixResponse)
+		exists bool
+		err    error
+	)
+	ctx, cancel := utils.ContextTimeoutRPC(parentCtx)
+	defer cancel()
+	exists, err = beaconapi.RandaoMix(
+		ctx,
+		bn.api,
+		stateId,
+		resp,
+	)
+	if !exists {
+		return nil, fmt.Errorf("endpoint not found on beacon client")
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &resp.RandaoMix, err
+}
+
+func (bn *BeaconClient) ExpectedWithdrawals(
+	parentCtx context.Context,
+	stateId eth2api.StateId,
+) (common.Withdrawals, error) {
+	var (
+		resp   = new(common.Withdrawals)
+		exists bool
+		err    error
+	)
+	ctx, cancel := utils.ContextTimeoutRPC(parentCtx)
+	defer cancel()
+	exists, err = builderapi.ExpectedWithdrawals(
+		ctx,
+		bn.api,
+		stateId,
+		resp,
+	)
+	if !exists {
+		return nil, fmt.Errorf("endpoint not found on beacon client")
+	}
+	if err != nil {
+		return nil, err
+	}
+	if resp == nil {
+		return nil, fmt.Errorf("nil expected withdrawals")
+	}
+	return *resp, err
 }
 
 func (bn *BeaconClient) BlockFinalityCheckpoints(
@@ -676,7 +784,7 @@ func (b *BeaconClient) WaitForExecutionPayload(
 
 			if versionedBlock, err := b.BlockV2(ctx, eth2api.BlockIdRoot(headInfo.Root)); err != nil {
 				continue
-			} else if executionPayload, err := versionedBlock.ExecutionPayload(); err == nil {
+			} else if executionPayload, _, _, err := versionedBlock.ExecutionPayload(); err == nil {
 				copy(
 					execution[:],
 					executionPayload.BlockHash[:],
@@ -755,7 +863,7 @@ func (bn *BeaconClient) GetLatestExecutionBeaconBlock(
 		if err != nil {
 			return nil, fmt.Errorf("failed to retrieve block: %v", err)
 		}
-		if executionPayload, err := versionedBlock.ExecutionPayload(); err == nil {
+		if executionPayload, _, _, err := versionedBlock.ExecutionPayload(); err == nil {
 			if !bytes.Equal(
 				executionPayload.BlockHash[:],
 				EMPTY_TREE_ROOT[:],
@@ -782,7 +890,7 @@ func (bn *BeaconClient) GetFirstExecutionBeaconBlock(
 		if err != nil {
 			continue
 		}
-		if executionPayload, err := versionedBlock.ExecutionPayload(); err == nil {
+		if executionPayload, _, _, err := versionedBlock.ExecutionPayload(); err == nil {
 			if !bytes.Equal(
 				executionPayload.BlockHash[:],
 				EMPTY_TREE_ROOT[:],
@@ -807,7 +915,7 @@ func (bn *BeaconClient) GetBeaconBlockByExecutionHash(
 		if err != nil {
 			continue
 		}
-		if executionPayload, err := versionedBlock.ExecutionPayload(); err == nil {
+		if executionPayload, _, _, err := versionedBlock.ExecutionPayload(); err == nil {
 			if !bytes.Equal(executionPayload.BlockHash[:], hash[:]) {
 				return versionedBlock, nil
 			}
@@ -955,7 +1063,7 @@ func (runningBeacons BeaconClients) PrintStatus(
 		}
 		if versionedBlock, err := b.BlockV2(ctx, eth2api.BlockHead); err == nil {
 			version = versionedBlock.Version
-			if executionPayload, err := versionedBlock.ExecutionPayload(); err == nil {
+			if executionPayload, _, _, err := versionedBlock.ExecutionPayload(); err == nil {
 				execution = utils.Shorten(
 					executionPayload.BlockHash.String(),
 				)
