@@ -238,11 +238,11 @@ func (b *VersionedSignedBeaconBlock) ExecutionPayloadBlockHash() *tree.Root {
 	case *altair.SignedBeaconBlock:
 		return nil
 	case *bellatrix.SignedBeaconBlock:
-		return (*tree.Root)(&v.Message.Body.ExecutionPayload.BlockHash)
+		return &v.Message.Body.ExecutionPayload.BlockHash
 	case *capella.SignedBeaconBlock:
-		return (*tree.Root)(&v.Message.Body.ExecutionPayload.BlockHash)
+		return &v.Message.Body.ExecutionPayload.BlockHash
 	case *deneb.SignedBeaconBlock:
-		return (*tree.Root)(&v.Message.Body.ExecutionPayload.BlockHash)
+		return &v.Message.Body.ExecutionPayload.BlockHash
 	}
 	panic(fmt.Errorf("badly formatted beacon block, type=%T", b.Data))
 }
