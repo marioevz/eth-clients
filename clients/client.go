@@ -11,6 +11,7 @@ import (
 
 type Client interface {
 	IsRunning() bool
+	GetHost() string
 	GetIP() net.IP
 	ClientType() string
 }
@@ -26,17 +27,18 @@ var _ Client = &ExternalClient{}
 
 type ExternalClient struct {
 	Type     string
+	Host     string
 	IP       net.IP
 	Port     *int64
 	EnodeURL string
 }
 
 func ExternalClientFromURL(url string, typ string) (*ExternalClient, error) {
-	ip, portStr, err := net.SplitHostPort(url)
+	host, portStr, err := net.SplitHostPort(url)
 	if err != nil {
 		if errP, ok := err.(*net.AddrError); ok {
 			if errP.Err == "missing port in address" {
-				ip = url
+				host = url
 			} else {
 				return nil, err
 			}
@@ -54,7 +56,8 @@ func ExternalClientFromURL(url string, typ string) (*ExternalClient, error) {
 	}
 	return &ExternalClient{
 		Type: typ,
-		IP:   net.ParseIP(ip),
+		Host: host,
+		IP:   net.ParseIP(host),
 		Port: port,
 	}, nil
 }
@@ -62,6 +65,10 @@ func ExternalClientFromURL(url string, typ string) (*ExternalClient, error) {
 func (m *ExternalClient) IsRunning() bool {
 	// We can try pinging a certain port for status
 	return true
+}
+
+func (m *ExternalClient) GetHost() string {
+	return m.Host
 }
 
 func (m *ExternalClient) GetIP() net.IP {

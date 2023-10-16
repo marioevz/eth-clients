@@ -87,7 +87,7 @@ func (bn *BeaconClient) Init(ctx context.Context) error {
 		bn.api = &eth2api.Eth2HttpClient{
 			Addr: fmt.Sprintf(
 				"http://%s:%d",
-				bn.GetIP(),
+				bn.GetHost(),
 				port,
 			),
 			Cli:   &http.Client{},
@@ -177,12 +177,22 @@ func (bn *BeaconClient) P2PAddr(parentCtx context.Context) (string, error) {
 	if err := nodeapi.Identity(ctx, bn.api, &out); err != nil {
 		return "", err
 	}
-	return fmt.Sprintf(
-		"/ip4/%s/tcp/%d/p2p/%s",
-		bn.GetIP().String(),
-		PortBeaconTCP,
-		out.PeerID,
-	), nil
+	ip := bn.GetIP()
+	if ip != nil {
+		return fmt.Sprintf(
+			"/ip4/%s/tcp/%d/p2p/%s",
+			ip.String(),
+			PortBeaconTCP,
+			out.PeerID,
+		), nil
+	} else {
+		return fmt.Sprintf(
+			"/dns/%s/tcp/%d/p2p/%s",
+			bn.GetHost(),
+			PortBeaconTCP,
+			out.PeerID,
+		), nil
+	}
 }
 
 func (bn *BeaconClient) BeaconAPIURL() (string, error) {

@@ -111,7 +111,7 @@ func (en *ExecutionClient) UserRPCAddress() (string, error) {
 	}
 	return fmt.Sprintf(
 		"http://%v:%d",
-		en.Client.GetIP(),
+		en.Client.GetHost(),
 		port,
 	), nil
 }
@@ -123,7 +123,7 @@ func (en *ExecutionClient) EngineRPCAddress() (string, error) {
 	}
 	return fmt.Sprintf(
 		"http://%v:%d",
-		en.Client.GetIP(),
+		en.Client.GetHost(),
 		port,
 	), nil
 }
