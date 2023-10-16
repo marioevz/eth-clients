@@ -71,5 +71,4 @@ func TestExternalClientFromUrl(t *testing.T) {
 			t.Fatalf("Incorrect port: want %d, got nil", *test.expectedPort)
 		}
 	}
-
 }

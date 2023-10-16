@@ -250,7 +250,6 @@ func (en *ExecutionClient) Init(ctx context.Context) error {
 
 			en.proxy = p
 		}
-
 	}
 	return nil
 }
@@ -392,7 +391,6 @@ func (en *ExecutionClient) EngineGetPayload(
 	payloadID *api.PayloadID,
 	version int,
 ) (*api.ExecutableData, *big.Int, *api.BlobsBundleV1, *bool, error) {
-
 	var (
 		rpcString = fmt.Sprintf("engine_getPayloadV%d", version)
 	)

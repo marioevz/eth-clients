@@ -72,7 +72,6 @@ func (bn *BeaconClient) Start() error {
 				return err
 			}
 		}
-
 	}
 
 	return bn.Init(context.Background())
@@ -540,9 +539,6 @@ func (bn *BeaconClient) ExpectedWithdrawals(
 	}
 	if err != nil {
 		return nil, err
-	}
-	if resp == nil {
-		return nil, fmt.Errorf("nil expected withdrawals")
 	}
 	return *resp, err
 }
