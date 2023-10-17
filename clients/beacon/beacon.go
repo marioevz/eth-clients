@@ -84,11 +84,7 @@ func (bn *BeaconClient) Init(ctx context.Context) error {
 			port = PortBeaconAPI
 		}
 		bn.api = &eth2api.Eth2HttpClient{
-			Addr: fmt.Sprintf(
-				"http://%s:%d",
-				bn.GetHost(),
-				port,
-			),
+			Addr:  bn.GetAddress(),
 			Cli:   &http.Client{},
 			Codec: eth2api.JSONCodec{},
 		}

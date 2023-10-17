@@ -5,12 +5,15 @@ an execution client or a consensus client
 package clients
 
 import (
+	"fmt"
 	"net"
 	"strconv"
+	"strings"
 )
 
 type Client interface {
 	IsRunning() bool
+	GetAddress() string
 	GetHost() string
 	GetIP() net.IP
 	ClientType() string
@@ -27,6 +30,7 @@ var _ Client = &ExternalClient{}
 
 type ExternalClient struct {
 	Type     string
+	Address  string
 	Host     string
 	IP       net.IP
 	Port     *int64
@@ -34,11 +38,19 @@ type ExternalClient struct {
 }
 
 func ExternalClientFromURL(url string, typ string) (*ExternalClient, error) {
-	host, portStr, err := net.SplitHostPort(url)
+	address := url
+	hostPortStr := address
+	hostPortStrArr := strings.Split(hostPortStr, "://")
+	if len(hostPortStrArr) == 2 {
+		hostPortStr = hostPortStrArr[1]
+	} else {
+		address = fmt.Sprintf("http://%s", address)
+	}
+	host, portStr, err := net.SplitHostPort(hostPortStr)
 	if err != nil {
 		if errP, ok := err.(*net.AddrError); ok {
 			if errP.Err == "missing port in address" {
-				host = url
+				host = hostPortStr
 			} else {
 				return nil, err
 			}
@@ -55,16 +67,35 @@ func ExternalClientFromURL(url string, typ string) (*ExternalClient, error) {
 		port = &portint
 	}
 	return &ExternalClient{
-		Type: typ,
-		Host: host,
-		IP:   net.ParseIP(host),
-		Port: port,
+		Address: address,
+		Type:    typ,
+		Host:    host,
+		IP:      net.ParseIP(host),
+		Port:    port,
 	}, nil
 }
 
 func (m *ExternalClient) IsRunning() bool {
 	// We can try pinging a certain port for status
 	return true
+}
+
+func (m *ExternalClient) GetAddress() string {
+	if m.Address != "" {
+		return m.Address
+	}
+	if m.Port != nil {
+		return fmt.Sprintf(
+			"http://%s:%d",
+			m.GetHost(),
+			m.GetPort(),
+		)
+	} else {
+		return fmt.Sprintf(
+			"http://%s",
+			m.GetHost(),
+		)
+	}
 }
 
 func (m *ExternalClient) GetHost() string {
