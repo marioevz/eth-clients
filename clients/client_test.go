@@ -14,39 +14,61 @@ func TestExternalClientFromUrl(t *testing.T) {
 	}
 
 	for _, test := range []struct {
-		url          string
-		expectedHost string
-		expectedIP   net.IP
-		expectedPort *int64
+		url             string
+		expectedAddress string
+		expectedHost    string
+		expectedIP      net.IP
+		expectedPort    *int64
 	}{
 		{
-			url:          "10.0.20.11:8551",
-			expectedHost: "10.0.20.11",
-			expectedIP:   net.ParseIP("10.0.20.11"),
-			expectedPort: pPort(8551),
+			url:             "10.0.20.11:8551",
+			expectedAddress: "http://10.0.20.11:8551",
+			expectedHost:    "10.0.20.11",
+			expectedIP:      net.ParseIP("10.0.20.11"),
+			expectedPort:    pPort(8551),
 		},
 		{
-			url:          "10.0.20.11",
-			expectedHost: "10.0.20.11",
-			expectedIP:   net.ParseIP("10.0.20.11"),
-			expectedPort: nil,
+			url:             "10.0.20.11",
+			expectedAddress: "http://10.0.20.11",
+			expectedHost:    "10.0.20.11",
+			expectedIP:      net.ParseIP("10.0.20.11"),
+			expectedPort:    nil,
 		},
 		{
-			url:          "somehost:8551",
-			expectedHost: "somehost",
-			expectedIP:   nil,
-			expectedPort: pPort(8551),
+			url:             "somehost:8551",
+			expectedAddress: "http://somehost:8551",
+			expectedHost:    "somehost",
+			expectedIP:      nil,
+			expectedPort:    pPort(8551),
 		},
 		{
-			url:          "somehost",
-			expectedHost: "somehost",
-			expectedIP:   nil,
-			expectedPort: nil,
+			url:             "somehost",
+			expectedAddress: "http://somehost",
+			expectedHost:    "somehost",
+			expectedIP:      nil,
+			expectedPort:    nil,
+		},
+		{
+			url:             "https://somehost",
+			expectedAddress: "https://somehost",
+			expectedHost:    "somehost",
+			expectedIP:      nil,
+			expectedPort:    nil,
+		},
+		{
+			url:             "https://somehost:1234",
+			expectedAddress: "https://somehost:1234",
+			expectedHost:    "somehost",
+			expectedIP:      nil,
+			expectedPort:    pPort(1234),
 		},
 	} {
 		ext, err := ExternalClientFromURL(test.url, "client")
 		if err != nil {
 			t.Fatal(err)
+		}
+		if ext.GetAddress() != test.expectedAddress {
+			t.Fatalf("Incorrect address: want %s, got %s", test.expectedAddress, ext.GetAddress())
 		}
 		if test.expectedIP != nil && ext.GetIP() != nil {
 			if !test.expectedIP.Equal(ext.GetIP()) {
