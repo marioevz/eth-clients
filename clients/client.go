@@ -39,6 +39,9 @@ type ExternalClient struct {
 
 func ExternalClientFromURL(url string, typ string) (*ExternalClient, error) {
 	address := url
+	if address[len(address)-1] == '/' {
+		address = address[:len(address)-1]
+	}
 	hostPortAuth := address
 	{
 		splitArr := strings.Split(hostPortAuth, "://")
