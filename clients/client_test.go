@@ -69,6 +69,13 @@ func TestExternalClientFromUrl(t *testing.T) {
 			expectedIP:      nil,
 			expectedPort:    nil,
 		},
+		{
+			url:             "https://user:pass@bn.lighthouse-geth-1.srv.dencun-devnet-9.ethpandaops.io/",
+			expectedAddress: "https://user:pass@bn.lighthouse-geth-1.srv.dencun-devnet-9.ethpandaops.io",
+			expectedHost:    "bn.lighthouse-geth-1.srv.dencun-devnet-9.ethpandaops.io",
+			expectedIP:      nil,
+			expectedPort:    nil,
+		},
 	} {
 		ext, err := ExternalClientFromURL(test.url, "client")
 		if err != nil {
