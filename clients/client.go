@@ -39,18 +39,27 @@ type ExternalClient struct {
 
 func ExternalClientFromURL(url string, typ string) (*ExternalClient, error) {
 	address := url
-	hostPortStr := address
-	hostPortStrArr := strings.Split(hostPortStr, "://")
-	if len(hostPortStrArr) == 2 {
-		hostPortStr = hostPortStrArr[1]
-	} else {
-		address = fmt.Sprintf("http://%s", address)
+	hostPortAuth := address
+	{
+		splitArr := strings.Split(hostPortAuth, "://")
+		if len(splitArr) == 2 {
+			hostPortAuth = splitArr[1]
+		} else {
+			address = fmt.Sprintf("http://%s", address)
+		}
 	}
-	host, portStr, err := net.SplitHostPort(hostPortStr)
+	hostPort := hostPortAuth
+	{
+		splitArr := strings.Split(hostPortAuth, "@")
+		if len(splitArr) == 2 {
+			hostPort = splitArr[1]
+		}
+	}
+	host, portStr, err := net.SplitHostPort(hostPort)
 	if err != nil {
 		if errP, ok := err.(*net.AddrError); ok {
 			if errP.Err == "missing port in address" {
-				host = hostPortStr
+				host = hostPort
 			} else {
 				return nil, err
 			}
