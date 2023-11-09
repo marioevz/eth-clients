@@ -231,6 +231,22 @@ func (b *VersionedSignedBeaconBlock) ProposerIndex() common.ValidatorIndex {
 	panic(fmt.Errorf("badly formatted beacon block, type=%T", b.Data))
 }
 
+func (b *VersionedSignedBeaconBlock) Signature() common.BLSSignature {
+	switch v := b.Data.(type) {
+	case *phase0.SignedBeaconBlock:
+		return v.Signature
+	case *altair.SignedBeaconBlock:
+		return v.Signature
+	case *bellatrix.SignedBeaconBlock:
+		return v.Signature
+	case *capella.SignedBeaconBlock:
+		return v.Signature
+	case *deneb.SignedBeaconBlock:
+		return v.Signature
+	}
+	panic(fmt.Errorf("badly formatted beacon block, type=%T", b.Data))
+}
+
 func (b *VersionedSignedBeaconBlock) ExecutionPayloadBlockHash() *tree.Root {
 	switch v := b.Data.(type) {
 	case *phase0.SignedBeaconBlock:
