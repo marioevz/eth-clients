@@ -5,7 +5,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net/http"
 	"strings"
 	"sync"
 	"time"
@@ -13,18 +12,22 @@ import (
 	ethcommon "github.com/ethereum/go-ethereum/common"
 	"github.com/marioevz/eth-clients/clients"
 	"github.com/marioevz/eth-clients/clients/utils"
-
 	"github.com/protolambda/eth2api"
 	"github.com/protolambda/eth2api/client/beaconapi"
-	"github.com/protolambda/eth2api/client/builderapi"
 	"github.com/protolambda/eth2api/client/debugapi"
 	"github.com/protolambda/eth2api/client/nodeapi"
 	"github.com/protolambda/eth2api/client/validatorapi"
 	"github.com/protolambda/zrnt/eth2/beacon/common"
-	"github.com/protolambda/zrnt/eth2/beacon/deneb"
-	"github.com/protolambda/zrnt/eth2/beacon/phase0"
 	"github.com/protolambda/zrnt/eth2/configs"
 	"github.com/protolambda/ztyp/tree"
+
+	eth2 "github.com/attestantio/go-eth2-client"
+	"github.com/attestantio/go-eth2-client/api"
+	apiv1 "github.com/attestantio/go-eth2-client/api/v1"
+	beaconhttp "github.com/attestantio/go-eth2-client/http"
+	"github.com/attestantio/go-eth2-client/spec"
+	"github.com/attestantio/go-eth2-client/spec/deneb"
+	"github.com/attestantio/go-eth2-client/spec/phase0"
 )
 
 const (
@@ -36,15 +39,15 @@ const (
 	PortValidatorAPI = 5000
 )
 
-var EMPTY_TREE_ROOT = tree.Root{}
+var EMPTY_TREE_ROOT = phase0.Root{}
 
 type BeaconClientConfig struct {
 	ClientIndex             int
 	TerminalTotalDifficulty int64
 	BeaconAPIPort           int
 	Spec                    *common.Spec
-	GenesisValidatorsRoot   *tree.Root
-	GenesisTime             *common.Timestamp
+	GenesisValidatorsRoot   *phase0.Root
+	GenesisTime             *time.Time
 	Subnet                  string
 }
 
@@ -54,7 +57,7 @@ type BeaconClient struct {
 	Config  BeaconClientConfig
 	Builder interface{}
 
-	api *eth2api.Eth2HttpClient
+	service eth2.Service
 }
 
 func (bn *BeaconClient) Logf(format string, values ...interface{}) {
@@ -78,15 +81,14 @@ func (bn *BeaconClient) Start() error {
 }
 
 func (bn *BeaconClient) Init(ctx context.Context) error {
-	if bn.api == nil {
-		port := bn.Config.BeaconAPIPort
-		if port == 0 {
-			port = PortBeaconAPI
-		}
-		bn.api = &eth2api.Eth2HttpClient{
-			Addr:  bn.GetAddress(),
-			Cli:   &http.Client{},
-			Codec: eth2api.JSONCodec{},
+	if bn.service == nil {
+		if service, err := beaconhttp.New(ctx,
+			// beaconhttp.WithTimeout(timeout),
+			beaconhttp.WithAddress(bn.GetAddress()),
+		); err != nil {
+			return err
+		} else {
+			bn.service = service
 		}
 	}
 
@@ -211,8 +213,8 @@ func (bn *BeaconClient) ClientName() string {
 	return name
 }
 
-func (bn *BeaconClient) API() *eth2api.Eth2HttpClient {
-	return bn.api
+func (bn *BeaconClient) Service() eth2.Service {
+	return bn.service
 }
 
 func SpecFromConfig(cfg *common.Config) (*common.Spec, error) {
@@ -236,85 +238,40 @@ func SpecFromConfig(cfg *common.Config) (*common.Spec, error) {
 // Beacon API wrappers
 func (bn *BeaconClient) BeaconConfig(
 	parentCtx context.Context,
-) (*common.Config, error) {
-	var (
-		cfg    = new(common.Config)
-		exists bool
-		err    error
-	)
+) (map[string]any, error) {
 	ctx, cancel := utils.ContextTimeoutRPC(parentCtx)
 	defer cancel()
-	exists, err = eth2api.SimpleRequest(
-		ctx,
-		bn.api,
-		eth2api.FmtGET("/eth/v1/config/spec"),
-		eth2api.Wrap(cfg),
-	)
-
-	if !exists {
-		return nil, fmt.Errorf("endpoint not found on beacon client")
-	}
-	return cfg, err
+	response, err := bn.service.(eth2.SpecProvider).Spec(ctx, &api.SpecOpts{})
+	return response.Data, err
 }
 
 func (bn *BeaconClient) GenesisConfig(
 	parentCtx context.Context,
-) (*eth2api.GenesisResponse, error) {
-	var (
-		dest   = new(eth2api.GenesisResponse)
-		exists bool
-		err    error
-	)
+) (*apiv1.Genesis, error) {
 	ctx, cancel := utils.ContextTimeoutRPC(parentCtx)
 	defer cancel()
-
-	exists, err = beaconapi.Genesis(ctx, bn.api, dest)
-
-	if !exists {
-		return nil, fmt.Errorf("endpoint not found on beacon client")
-	}
-	return dest, err
+	response, err := bn.service.(eth2.GenesisProvider).Genesis(ctx, &api.GenesisOpts{})
+	return response.Data, err
 }
 
 func (bn *BeaconClient) BlockV2Root(
 	parentCtx context.Context,
 	blockId eth2api.BlockId,
-) (tree.Root, error) {
-	var (
-		root   tree.Root
-		exists bool
-		err    error
-	)
+) (*phase0.Root, error) {
 	ctx, cancel := utils.ContextTimeoutRPC(parentCtx)
 	defer cancel()
-	root, exists, err = beaconapi.BlockRoot(ctx, bn.api, blockId)
-	if !exists {
-		return root, fmt.Errorf(
-			"endpoint not found on beacon client",
-		)
-	}
-	return root, err
+	response, err := bn.service.(eth2.BeaconBlockRootProvider).BeaconBlockRoot(ctx, &api.BeaconBlockRootOpts{Block: blockId.BlockId()})
+	return response.Data, err
 }
 
 func (bn *BeaconClient) BlockV2(
 	parentCtx context.Context,
 	blockId eth2api.BlockId,
-) (*VersionedSignedBeaconBlock, error) {
-	var (
-		versionedBlock = new(eth2api.VersionedSignedBeaconBlock)
-		exists         bool
-		err            error
-	)
+) (*spec.VersionedSignedBeaconBlock, error) {
 	ctx, cancel := utils.ContextTimeoutRPC(parentCtx)
 	defer cancel()
-	exists, err = beaconapi.BlockV2(ctx, bn.api, blockId, versionedBlock)
-	if !exists {
-		return nil, fmt.Errorf("endpoint not found on beacon client")
-	}
-	return &VersionedSignedBeaconBlock{
-		VersionedSignedBeaconBlock: versionedBlock,
-		spec:                       bn.Config.Spec,
-	}, err
+	response, err := bn.service.(eth2.SignedBeaconBlockProvider).SignedBeaconBlock(ctx, &api.SignedBeaconBlockOpts{})
+	return response.Data, err
 }
 
 type BlockV2OptimisticResponse struct {
@@ -348,51 +305,33 @@ func (bn *BeaconClient) BlockIsOptimistic(
 func (bn *BeaconClient) BlockHeader(
 	parentCtx context.Context,
 	blockId eth2api.BlockId,
-) (*eth2api.BeaconBlockHeaderAndInfo, error) {
-	var (
-		headInfo = new(eth2api.BeaconBlockHeaderAndInfo)
-		exists   bool
-		err      error
-	)
+) (*apiv1.BeaconBlockHeader, error) {
 	ctx, cancel := utils.ContextTimeoutRPC(parentCtx)
 	defer cancel()
-	exists, err = beaconapi.BlockHeader(ctx, bn.api, blockId, headInfo)
-	if !exists {
-		return nil, fmt.Errorf("endpoint not found on beacon client")
-	}
-	return headInfo, err
+	response, err := bn.service.(eth2.BeaconBlockHeadersProvider).BeaconBlockHeader(ctx, &api.BeaconBlockHeaderOpts{Block: blockId.BlockId()})
+	return response.Data, err
 }
 
 func (bn *BeaconClient) BlobSidecars(
 	parentCtx context.Context,
 	blockId eth2api.BlockId,
-) ([]deneb.BlobSidecar, error) {
-	var (
-		blobSidecars = new([]deneb.BlobSidecar)
-		exists       bool
-		err          error
-	)
+) ([]*deneb.BlobSidecar, error) {
 	ctx, cancel := utils.ContextTimeoutRPC(parentCtx)
 	defer cancel()
-	exists, err = beaconapi.BlobSidecars(ctx, bn.api, blockId, blobSidecars)
-	if !exists {
-		return nil, fmt.Errorf("endpoint not found on beacon client")
-	}
-	return *blobSidecars, err
+	response, err := bn.service.(eth2.BlobSidecarsProvider).BlobSidecars(ctx, &api.BlobSidecarsOpts{Block: blockId.BlockId()})
+	return response.Data, err
 }
 
-func (bn *BeaconClient) StateValidator(
+func (bn *BeaconClient) StateValidatorByIndex(
 	parentCtx context.Context,
 	stateId eth2api.StateId,
 	validatorId eth2api.ValidatorId,
-) (*eth2api.ValidatorResponse, error) {
-	var (
-		stateValidatorResponse = new(eth2api.ValidatorResponse)
-		exists                 bool
-		err                    error
-	)
+) (*apiv1.Validator, error) {
 	ctx, cancel := utils.ContextTimeoutRPC(parentCtx)
 	defer cancel()
+
+	response, err := bn.service.(eth2.ValidatorsProvider).Validators(ctx, &api.ValidatorsOpts{})
+
 	exists, err = beaconapi.StateValidator(
 		ctx,
 		bn.api,
